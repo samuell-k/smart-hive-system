@@ -2,13 +2,12 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Hexagon, Plus, Bell, BookOpen } from "lucide-react"
+import { Hexagon, Plus, Bell, BookOpen, Activity, Droplets, Weight, Wind } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { getUserHives, getAllHives } from "@/lib/db-utils"
 import Link from "next/link"
 import { useEffect, useState } from "react"
-import { HiveStatsCard } from "@/components/hive-stats-card"
-import { Line, LineChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from "recharts"
+import { XAxis, YAxis, CartesianGrid, ResponsiveContainer, Line, LineChart, Legend } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 
 const generateMockData = () => {
@@ -87,67 +86,139 @@ export default function DashboardPage() {
     return "danger"
   }
 
+  const temperatureStatus = getTemperatureStatus(hiveStats.temperature)
+  const humidityStatus = getHumidityStatus(hiveStats.humidity)
+  const weightStatus = getWeightStatus(hiveStats.weight)
+  const gasStatus = getGasStatus(hiveStats.gasLevel)
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome back, {userData?.displayName}! Here's {isAdmin ? "the system" : "your hive"} overview.
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">
+            Welcome back, {userData?.displayName}! Here's your hive overview.
           </p>
         </div>
         <Link href="/dashboard/hives">
           <Button>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             Add Hive
           </Button>
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        <HiveStatsCard
-          title={isAdmin ? "All Active Hives" : "Active Hives"}
-          value={loading ? "--" : activeHives}
-          description={`${totalHives} Total ${isAdmin ? "system" : "registered"} hives`}
-          status="optimal"
-          icon={<Hexagon className="h-5 w-5" />}
-        />
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <Card className="bg-green-50 border-green-200">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Hives</CardTitle>
+            <Hexagon className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{loading ? "--" : activeHives}</div>
+            <p className="text-xs text-muted-foreground">{totalHives} Total registered hives</p>
+          </CardContent>
+        </Card>
 
-        <HiveStatsCard
-          title="Current Temperature"
-          value={hiveStats.temperature}
-          unit="°C"
-          description="Optimal range: 32°C - 36°C"
-          status={getTemperatureStatus(hiveStats.temperature)}
-          icon={<Hexagon className="h-5 w-5" />}
-        />
+        <Card
+          className={
+            temperatureStatus === "optimal"
+              ? "bg-green-50 border-green-200"
+              : temperatureStatus === "warning"
+                ? "bg-yellow-50 border-yellow-200"
+                : "bg-red-50 border-red-200"
+          }
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Current Temperature</CardTitle>
+            <Activity
+              className={`h-4 w-4 ${temperatureStatus === "optimal" ? "text-green-600" : temperatureStatus === "warning" ? "text-yellow-600" : "text-red-600"}`}
+            />
+          </CardHeader>
+          <CardContent>
+            <div
+              className={`text-2xl font-bold ${temperatureStatus === "optimal" ? "text-green-600" : temperatureStatus === "warning" ? "text-yellow-600" : "text-red-600"}`}
+            >
+              {hiveStats.temperature}°C
+            </div>
+            <p className="text-xs text-muted-foreground">Optimal range: 32°C - 36°C</p>
+          </CardContent>
+        </Card>
 
-        <HiveStatsCard
-          title="Current Humidity"
-          value={hiveStats.humidity}
-          unit="%"
-          description="Optimal range: 50% - 60%"
-          status={getHumidityStatus(hiveStats.humidity)}
-          icon={<Hexagon className="h-5 w-5" />}
-        />
+        <Card
+          className={
+            humidityStatus === "optimal"
+              ? "bg-green-50 border-green-200"
+              : humidityStatus === "warning"
+                ? "bg-yellow-50 border-yellow-200"
+                : "bg-red-50 border-red-200"
+          }
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Current Humidity</CardTitle>
+            <Droplets
+              className={`h-4 w-4 ${humidityStatus === "optimal" ? "text-green-600" : humidityStatus === "warning" ? "text-yellow-600" : "text-red-600"}`}
+            />
+          </CardHeader>
+          <CardContent>
+            <div
+              className={`text-2xl font-bold ${humidityStatus === "optimal" ? "text-green-600" : humidityStatus === "warning" ? "text-yellow-600" : "text-red-600"}`}
+            >
+              {hiveStats.humidity}%
+            </div>
+            <p className="text-xs text-muted-foreground">Optimal range: 50% - 60%</p>
+          </CardContent>
+        </Card>
 
-        <HiveStatsCard
-          title="Current Hive Weight"
-          value={hiveStats.weight}
-          unit="kg"
-          description="Target weight: 12kg - 20kg"
-          status={getWeightStatus(hiveStats.weight)}
-          icon={<Hexagon className="h-5 w-5" />}
-        />
+        <Card
+          className={
+            weightStatus === "optimal"
+              ? "bg-green-50 border-green-200"
+              : weightStatus === "warning"
+                ? "bg-yellow-50 border-yellow-200"
+                : "bg-red-50 border-red-200"
+          }
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Current Hive Weight</CardTitle>
+            <Weight
+              className={`h-4 w-4 ${weightStatus === "optimal" ? "text-green-600" : weightStatus === "warning" ? "text-yellow-600" : "text-red-600"}`}
+            />
+          </CardHeader>
+          <CardContent>
+            <div
+              className={`text-2xl font-bold ${weightStatus === "optimal" ? "text-green-600" : weightStatus === "warning" ? "text-yellow-600" : "text-red-600"}`}
+            >
+              {hiveStats.weight}kg
+            </div>
+            <p className="text-xs text-muted-foreground">Target weight: 12kg - 20kg</p>
+          </CardContent>
+        </Card>
 
-        <HiveStatsCard
-          title="Gas Level"
-          value={hiveStats.gasLevel}
-          unit="ppm"
-          description="Safe range: < 200 ppm"
-          status={getGasStatus(hiveStats.gasLevel)}
-          icon={<Hexagon className="h-5 w-5" />}
-        />
+        <Card
+          className={
+            gasStatus === "optimal"
+              ? "bg-green-50 border-green-200"
+              : gasStatus === "warning"
+                ? "bg-yellow-50 border-yellow-200"
+                : "bg-red-50 border-red-200"
+          }
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Gas Level</CardTitle>
+            <Wind
+              className={`h-4 w-4 ${gasStatus === "optimal" ? "text-green-600" : gasStatus === "warning" ? "text-yellow-600" : "text-red-600"}`}
+            />
+          </CardHeader>
+          <CardContent>
+            <div
+              className={`text-2xl font-bold ${gasStatus === "optimal" ? "text-green-600" : gasStatus === "warning" ? "text-yellow-600" : "text-red-600"}`}
+            >
+              {hiveStats.gasLevel} ppm
+            </div>
+            <p className="text-xs text-muted-foreground">Safe range: {"<"} 200 ppm</p>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
@@ -177,22 +248,21 @@ export default function DashboardPage() {
                 color: "hsl(var(--chart-4))",
               },
             }}
-            className="h-[400px]"
+            className="h-[350px]"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trendData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="time" className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))" }} />
-                <YAxis className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))" }} />
+              <LineChart data={trendData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="time" />
+                <YAxis />
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <Legend />
                 <Line
                   type="monotone"
-                  dataKey="temperature"
-                  stroke="var(--color-temperature)"
-                  name="Temperature (°C)"
+                  dataKey="gasLevel"
+                  stroke="var(--color-gasLevel)"
+                  name="Gas Level (ppm)"
                   strokeWidth={2}
-                  dot={false}
                 />
                 <Line
                   type="monotone"
@@ -200,7 +270,13 @@ export default function DashboardPage() {
                   stroke="var(--color-humidity)"
                   name="Humidity (%)"
                   strokeWidth={2}
-                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="temperature"
+                  stroke="var(--color-temperature)"
+                  name="Temperature (°C)"
+                  strokeWidth={2}
                 />
                 <Line
                   type="monotone"
@@ -208,15 +284,6 @@ export default function DashboardPage() {
                   stroke="var(--color-weight)"
                   name="Weight (kg)"
                   strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="gasLevel"
-                  stroke="var(--color-gasLevel)"
-                  name="Gas Level (ppm)"
-                  strokeWidth={2}
-                  dot={false}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -224,32 +291,32 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid gap-4 md:grid-cols-3">
         <Link href="/dashboard/hives">
-          <Card className="hover:border-primary transition-colors cursor-pointer">
+          <Card className="hover:bg-accent transition-colors cursor-pointer">
             <CardHeader>
-              <Hexagon className="h-8 w-8 text-primary mb-2" />
-              <CardTitle className="text-lg">Manage Hives</CardTitle>
+              <Hexagon className="h-8 w-8 mb-2 text-primary" />
+              <CardTitle>Manage Hives</CardTitle>
               <CardDescription>View and update your hive information</CardDescription>
             </CardHeader>
           </Card>
         </Link>
 
         <Link href="/dashboard/training">
-          <Card className="hover:border-primary transition-colors cursor-pointer">
+          <Card className="hover:bg-accent transition-colors cursor-pointer">
             <CardHeader>
-              <BookOpen className="h-8 w-8 text-primary mb-2" />
-              <CardTitle className="text-lg">Training Center</CardTitle>
+              <BookOpen className="h-8 w-8 mb-2 text-primary" />
+              <CardTitle>Training Center</CardTitle>
               <CardDescription>Access educational materials and courses</CardDescription>
             </CardHeader>
           </Card>
         </Link>
 
         <Link href="/dashboard/notifications">
-          <Card className="hover:border-primary transition-colors cursor-pointer">
+          <Card className="hover:bg-accent transition-colors cursor-pointer">
             <CardHeader>
-              <Bell className="h-8 w-8 text-primary mb-2" />
-              <CardTitle className="text-lg">Notifications</CardTitle>
+              <Bell className="h-8 w-8 mb-2 text-primary" />
+              <CardTitle>Notifications</CardTitle>
               <CardDescription>Check alerts and system updates</CardDescription>
             </CardHeader>
           </Card>

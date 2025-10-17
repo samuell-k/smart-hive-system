@@ -1,11 +1,12 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Dialog,
   DialogContent,
@@ -14,8 +15,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Plus, MapPin, Calendar, MoreVertical, Edit, Trash2, Hexagon, User } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
@@ -37,7 +36,7 @@ export default function HivesPage() {
 
   // Form state
   const [location, setLocation] = useState("")
-  const [userName, setUserName] = useState("") // Added userName state for the form
+  const [userName, setUserName] = useState("")
   const [installationDate, setInstallationDate] = useState("")
   const [submitting, setSubmitting] = useState(false)
 
@@ -79,29 +78,25 @@ export default function HivesPage() {
 
   const resetForm = () => {
     setLocation("")
-    setUserName("") // Reset userName when form is reset
+    setUserName("")
     setInstallationDate("")
     setEditingHive(null)
   }
 
   const formatDateForInput = (date: any): string => {
     try {
-      // Handle Firestore Timestamp objects
       if (date && typeof date.toDate === "function") {
         return date.toDate().toISOString().split("T")[0]
       }
-      // Handle JavaScript Date objects
       if (date instanceof Date) {
         return date.toISOString().split("T")[0]
       }
-      // Handle date strings or timestamps
       if (date) {
         const parsedDate = new Date(date)
         if (!isNaN(parsedDate.getTime())) {
           return parsedDate.toISOString().split("T")[0]
         }
       }
-      // Fallback to today's date
       return new Date().toISOString().split("T")[0]
     } catch (error) {
       console.error("Error formatting date:", error)
@@ -111,15 +106,12 @@ export default function HivesPage() {
 
   const formatDateForDisplay = (date: any): string => {
     try {
-      // Handle Firestore Timestamp objects
       if (date && typeof date.toDate === "function") {
         return date.toDate().toLocaleDateString()
       }
-      // Handle JavaScript Date objects
       if (date instanceof Date) {
         return date.toLocaleDateString()
       }
-      // Handle date strings or timestamps
       if (date) {
         const parsedDate = new Date(date)
         if (!isNaN(parsedDate.getTime())) {
@@ -140,7 +132,7 @@ export default function HivesPage() {
     if (hive) {
       setEditingHive(hive)
       setLocation(hive.location)
-      setUserName(hive.userName || "") // Set userName when editing
+      setUserName(hive.userName || "")
       setInstallationDate(formatDateForInput(hive.installationDate))
     } else {
       resetForm()
@@ -156,7 +148,7 @@ export default function HivesPage() {
     try {
       const hiveData = {
         userId: userData.uid,
-        userName, // Include userName in hive data
+        userName,
         hiveNumber: editingHive?.hiveNumber || `HV-${Date.now().toString().slice(-8)}`,
         location,
         installationDate: new Date(installationDate),
@@ -200,8 +192,8 @@ export default function HivesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">{isAdmin ? "All Hives" : "My Hives"}</h1>
-          <p className="text-muted-foreground">
-            {isAdmin ? "View and manage all registered hives" : "Manage and monitor all your registered hives"}
+          <p className="text-muted-foreground mt-1">
+            {isAdmin ? "View and manage all registered hives" : "View and manage your registered hives"}
           </p>
         </div>
         {!isAdmin && (
@@ -209,7 +201,7 @@ export default function HivesPage() {
             <DialogTrigger asChild>
               <Button onClick={() => handleOpenDialog()}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add New Hive
+                Add Hive
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -298,29 +290,26 @@ export default function HivesPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {hives.map((hive) => (
             <Card key={hive.id}>
               <CardHeader>
                 <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                       <Hexagon className="h-5 w-5 text-primary" />
-                      <CardTitle>Hive {hive.hiveNumber}</CardTitle>
                     </div>
-                    <CardDescription className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {hive.location}
-                    </CardDescription>
-                    <CardDescription className="flex items-center gap-1 mt-1">
-                      <User className="h-3 w-3" />
-                      {hive.userName}
-                    </CardDescription>
-                    {isAdmin && usersMap[hive.userId] && hive.userId !== userData?.uid && (
-                      <CardDescription className="flex items-center gap-1 mt-1 text-xs">
-                        Owner: {usersMap[hive.userId].fullName}
-                      </CardDescription>
-                    )}
+                    <div>
+                      <CardTitle className="text-lg">{hive.hiveNumber}</CardTitle>
+                      <Badge
+                        variant={
+                          hive.status === "confirmed" ? "default" : hive.status === "pending" ? "secondary" : "outline"
+                        }
+                        className="mt-1"
+                      >
+                        {hive.status}
+                      </Badge>
+                    </div>
                   </div>
                   {(!isAdmin || hive.userId === userData?.uid) && (
                     <DropdownMenu>
@@ -347,19 +336,23 @@ export default function HivesPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
-                    {formatDateForDisplay(hive.installationDate)}
-                  </div>
-                  <Badge
-                    variant={
-                      hive.status === "confirmed" ? "default" : hive.status === "pending" ? "secondary" : "outline"
-                    }
-                  >
-                    {hive.status}
-                  </Badge>
+                <div className="flex items-center gap-2 text-sm">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-foreground">{hive.location}</span>
                 </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-foreground">{hive.userName}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">{formatDateForDisplay(hive.installationDate)}</span>
+                </div>
+                {isAdmin && usersMap[hive.userId] && hive.userId !== userData?.uid && (
+                  <div className="pt-2 border-t">
+                    <p className="text-xs text-muted-foreground">Owner: {usersMap[hive.userId].fullName}</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
