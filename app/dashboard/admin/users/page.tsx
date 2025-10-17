@@ -117,8 +117,8 @@ export default function ManageUsersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Manage Users</h1>
-          <p className="text-muted-foreground">View and manage all registered users</p>
+          <h1 className="text-3xl font-bold text-primary">Manage Users</h1>
+          <p className="text-primary/70">View and manage all registered users</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>

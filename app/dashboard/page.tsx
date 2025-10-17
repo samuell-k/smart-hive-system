@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Hexagon, Plus, Bell, BookOpen, Activity, Droplets, Weight, Wind } from "lucide-react"
+import { Hexagon, Plus, Bell, BookOpen, Activity, Droplets, Weight, Wind, X } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { getUserHives, getAllHives } from "@/lib/db-utils"
 import Link from "next/link"
@@ -33,6 +33,7 @@ export default function DashboardPage() {
   const [totalHives, setTotalHives] = useState(0)
   const [activeHives, setActiveHives] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [showWelcomeBanner, setShowWelcomeBanner] = useState(true)
   const isAdmin = userData?.role === "admin"
 
   const [hiveStats, setHiveStats] = useState({
@@ -93,6 +94,30 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      {showWelcomeBanner && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-amber-500 rounded-full p-2">
+              <Hexagon className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-amber-900">Welcome to Smart Hive Solutions!</h3>
+              <p className="text-sm text-amber-700">
+                Manage your hives, monitor metrics, and access training materials all in one place.
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowWelcomeBanner(false)}
+            className="text-amber-700 hover:text-amber-900 hover:bg-amber-100"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
