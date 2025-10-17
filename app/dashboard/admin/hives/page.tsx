@@ -7,6 +7,16 @@ import { getPendingHives, updateDocument } from "@/lib/db-utils"
 import type { Hive } from "@/lib/db-utils"
 import { Hexagon, MapPin, Calendar, CheckCircle, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 function formatDateForDisplay(date: any): string {
   try {
@@ -31,6 +41,12 @@ export default function ConfirmHivesPage() {
   const router = useRouter()
   const [hives, setHives] = useState<Hive[]>([])
   const [loading, setLoading] = useState(true)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [pendingAction, setPendingAction] = useState<{
+    type: "confirm" | "reject"
+    hiveId: string
+    hiveNumber: string
+  } | null>(null)
 
   useEffect(() => {
     if (userData && userData.role !== "admin") {
@@ -53,21 +69,31 @@ export default function ConfirmHivesPage() {
     }
   }
 
-  const handleConfirm = async (hiveId: string) => {
-    try {
-      await updateDocument("hives", hiveId, { status: "confirmed" })
-      setHives(hives.filter((h) => h.id !== hiveId))
-    } catch (error) {
-      console.error("Error confirming hive:", error)
-    }
+  const handleConfirmClick = (hiveId: string, hiveNumber: string) => {
+    setPendingAction({ type: "confirm", hiveId, hiveNumber })
+    setDialogOpen(true)
   }
 
-  const handleReject = async (hiveId: string) => {
+  const handleRejectClick = (hiveId: string, hiveNumber: string) => {
+    setPendingAction({ type: "reject", hiveId, hiveNumber })
+    setDialogOpen(true)
+  }
+
+  const executeAction = async () => {
+    if (!pendingAction) return
+
     try {
-      await updateDocument("hives", hiveId, { status: "inactive" })
-      setHives(hives.filter((h) => h.id !== hiveId))
+      if (pendingAction.type === "confirm") {
+        await updateDocument("hives", pendingAction.hiveId, { status: "confirmed" })
+      } else {
+        await updateDocument("hives", pendingAction.hiveId, { status: "inactive" })
+      }
+      setHives(hives.filter((h) => h.id !== pendingAction.hiveId))
     } catch (error) {
-      console.error("Error rejecting hive:", error)
+      console.error(`Error ${pendingAction.type}ing hive:`, error)
+    } finally {
+      setDialogOpen(false)
+      setPendingAction(null)
     }
   }
 
@@ -88,7 +114,7 @@ export default function ConfirmHivesPage() {
         <p className="text-muted-foreground">Review and approve pending hive registrations</p>
       </div>
 
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {hives.map((hive) => (
           <div key={hive.id} className="p-4 border border-border rounded-lg space-y-4">
             <div className="flex items-start justify-between">
@@ -113,13 +139,13 @@ export default function ConfirmHivesPage() {
             <div className="flex gap-2">
               <Button
                 size="sm"
-                onClick={() => handleConfirm(hive.id!)}
+                onClick={() => handleConfirmClick(hive.id!, hive.hiveNumber)}
                 className="bg-green-600 hover:bg-green-700 text-white"
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Confirm
               </Button>
-              <Button size="sm" variant="destructive" onClick={() => handleReject(hive.id!)}>
+              <Button size="sm" variant="destructive" onClick={() => handleRejectClick(hive.id!, hive.hiveNumber)}>
                 <XCircle className="h-4 w-4 mr-2" />
                 Reject
               </Button>
@@ -127,6 +153,34 @@ export default function ConfirmHivesPage() {
           </div>
         ))}
       </div>
+
+      <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingAction?.type === "confirm" ? "Confirm Hive Registration" : "Reject Hive Registration"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingAction?.type === "confirm"
+                ? `Are you sure you want to confirm Hive ${pendingAction?.hiveNumber}? This will activate the hive and make it visible to the user.`
+                : `Are you sure you want to reject Hive ${pendingAction?.hiveNumber}? This action will mark the hive as inactive.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={executeAction}
+              className={
+                pendingAction?.type === "confirm"
+                  ? "bg-green-600 hover:bg-green-700"
+                  : "bg-destructive hover:bg-destructive/90"
+              }
+            >
+              {pendingAction?.type === "confirm" ? "Confirm" : "Reject"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
