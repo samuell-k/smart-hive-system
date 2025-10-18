@@ -6,6 +6,7 @@ import { Hexagon, Plus, Bell, BookOpen, Activity, Droplets, Weight, Wind, X } fr
 import { useAuth } from "@/lib/auth-context"
 import { getUserHives, getAllHives } from "@/lib/db-utils"
 import { subscribeToHiveData, getMetricStatus, type HiveMetrics } from "@/lib/realtime-db-utils"
+import { getHistoricalData, storeHistoricalData, generateMockTrendData, type ChartDataPoint } from "@/lib/historical-data-utils"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { XAxis, YAxis, CartesianGrid, ResponsiveContainer, Line, LineChart, Legend } from "recharts"
@@ -78,7 +79,6 @@ export default function DashboardPage() {
       unsubscribe()
     }
   }, [])
-
   const temperatureStatus = getMetricStatus(hiveStats.temperature, 'temperature')
   const humidityStatus = getMetricStatus(hiveStats.humidity, 'humidity')
   const weightStatus = getMetricStatus(hiveStats.weight, 'weight')
@@ -117,7 +117,7 @@ export default function DashboardPage() {
             Welcome back, {userData?.displayName}! Here's your hive overview.
             {realtimeData && (
               <span className="ml-2 inline-flex items-center gap-1 text-green-600 text-sm">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse inline-block"></span>
                 Live Data
               </span>
             )}
