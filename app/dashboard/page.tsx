@@ -85,10 +85,10 @@ export default function DashboardPage() {
         setTrendData(prevData => {
           const newDataPoint: ChartDataPoint = {
             time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-            temperature: data.temperature,
-            humidity: data.humidity,
-            weight: data.weight,
-            gasLevel: data.gasLevel
+            temperature: parseFloat(data.temperature.toFixed(2)),
+            humidity: parseFloat(data.humidity.toFixed(2)),
+            weight: data.weight < 0 ? 0 : parseFloat(data.weight.toFixed(2)),
+            gasLevel: parseFloat(data.gasLevel.toFixed(2))
           }
           
           // Add new point and keep only last 24 points
@@ -148,7 +148,7 @@ export default function DashboardPage() {
             Welcome back, {userData?.displayName}! Here's your hive overview.
             {realtimeData && (
               <span className="ml-2 inline-flex items-center gap-1 text-green-600 text-sm">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse inline-block"></span>
                 Live Data
               </span>
             )}
@@ -193,9 +193,9 @@ export default function DashboardPage() {
             <div
               className={`text-2xl font-bold ${temperatureStatus === "optimal" ? "text-green-600" : temperatureStatus === "warning" ? "text-yellow-600" : "text-red-600"}`}
             >
-              {hiveStats.temperature}°C
+              {hiveStats.temperature.toFixed(2)}°C
             </div>
-            <p className="text-xs text-muted-foreground">Optimal range: 32°C - 36°C</p>
+            <p className="text-xs text-muted-foreground">Optimal range: 32°C ---- 36°C</p>
           </CardContent>
         </Card>
 
@@ -218,9 +218,9 @@ export default function DashboardPage() {
             <div
               className={`text-2xl font-bold ${humidityStatus === "optimal" ? "text-green-600" : humidityStatus === "warning" ? "text-yellow-600" : "text-red-600"}`}
             >
-              {hiveStats.humidity}%
+              {hiveStats.humidity.toFixed(2)}%
             </div>
-            <p className="text-xs text-muted-foreground">Optimal range: 50% - 60%</p>
+            <p className="text-xs text-muted-foreground">Optimal range: 50% ---- 60%</p>
           </CardContent>
         </Card>
 
@@ -243,9 +243,9 @@ export default function DashboardPage() {
             <div
               className={`text-2xl font-bold ${weightStatus === "optimal" ? "text-green-600" : weightStatus === "warning" ? "text-yellow-600" : "text-red-600"}`}
             >
-              {hiveStats.weight}kg
+              {hiveStats.weight < 0 ? "-----" : `${hiveStats.weight.toFixed(2)}kg`}
             </div>
-            <p className="text-xs text-muted-foreground">Target weight: 12kg - 20kg</p>
+            <p className="text-xs text-muted-foreground">Target weight: 12kg ---- 20kg</p>
           </CardContent>
         </Card>
 
@@ -268,7 +268,7 @@ export default function DashboardPage() {
             <div
               className={`text-2xl font-bold ${gasStatus === "optimal" ? "text-green-600" : gasStatus === "warning" ? "text-yellow-600" : "text-red-600"}`}
             >
-              {hiveStats.gasLevel} ppm
+              {hiveStats.gasLevel.toFixed(2)} ppm
             </div>
             <p className="text-xs text-muted-foreground">Safe range: {"<"} 200 ppm</p>
           </CardContent>
