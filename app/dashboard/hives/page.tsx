@@ -8,6 +8,14 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -199,7 +207,7 @@ export default function HivesPage() {
         {!isAdmin && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={() => handleOpenDialog()}>
+              <Button onClick={() => handleOpenDialog()} className="cursor-pointer">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Hive
               </Button>
@@ -281,7 +289,7 @@ export default function HivesPage() {
                 {isAdmin ? "No hives have been registered yet" : "Get started by adding your first hive"}
               </p>
               {!isAdmin && (
-                <Button onClick={() => handleOpenDialog()}>
+                <Button onClick={() => handleOpenDialog()} className="cursor-pointer">
                   <Plus className="h-4 w-4 mr-2" />
                   Add Your First Hive
                 </Button>
@@ -290,73 +298,107 @@ export default function HivesPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {hives.map((hive) => (
-            <Card key={hive.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Hexagon className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">{hive.hiveNumber}</CardTitle>
-                      <Badge
-                        variant={
-                          hive.status === "confirmed" ? "default" : hive.status === "pending" ? "secondary" : "outline"
-                        }
-                        className="mt-1"
-                      >
-                        {hive.status}
-                      </Badge>
-                    </div>
-                  </div>
-                  {(!isAdmin || hive.userId === userData?.uid) && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleOpenDialog(hive)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(hive.id!)}
-                          className="text-destructive focus:text-destructive"
+        <Card>
+          <CardHeader>
+            <CardTitle>All Hives</CardTitle>
+            <p className="text-sm text-muted-foreground">View and manage all registered hives</p>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Hive</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>User</TableHead>
+                    <TableHead>Installation Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    {isAdmin && <TableHead>Owner</TableHead>}
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {hives.map((hive) => (
+                    <TableRow key={hive.id} className="hover:bg-muted/50">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Hexagon className="h-4 w-4 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground">{hive.hiveNumber}</p>
+                            <p className="text-sm text-muted-foreground">ID: {hive.id}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          {hive.location}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          {hive.userName}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          {formatDateForDisplay(hive.installationDate)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            hive.status === "confirmed" ? "default" : hive.status === "pending" ? "secondary" : "outline"
+                          }
                         >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-foreground">{hive.location}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-foreground">{hive.userName}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">{formatDateForDisplay(hive.installationDate)}</span>
-                </div>
-                {isAdmin && usersMap[hive.userId] && hive.userId !== userData?.uid && (
-                  <div className="pt-2 border-t">
-                    <p className="text-xs text-muted-foreground">Owner: {usersMap[hive.userId].fullName}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                          {hive.status}
+                        </Badge>
+                      </TableCell>
+                      {isAdmin && (
+                        <TableCell>
+                          {usersMap[hive.userId] && hive.userId !== userData?.uid ? (
+                            <span className="text-sm text-muted-foreground">
+                              {usersMap[hive.userId].fullName}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">You</span>
+                          )}
+                        </TableCell>
+                      )}
+                      <TableCell>
+                        {(!isAdmin || hive.userId === userData?.uid) && (
+                          <div className="flex items-center gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleOpenDialog(hive)}
+                            >
+                              <Edit className="h-4 w-4 mr-1" />
+                              Edit
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => handleDelete(hive.id!)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Delete
+                            </Button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   )

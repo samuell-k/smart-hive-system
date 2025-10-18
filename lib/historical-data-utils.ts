@@ -42,35 +42,58 @@ export async function storeHistoricalData(metrics: HiveMetrics): Promise<void> {
 export async function getHistoricalData(): Promise<ChartDataPoint[]> {
   try {
     const historicalRef = ref(database, "historicalData")
-    const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000)
     
-    // Query for data from the last 24 hours, limited to last 100 entries
-    const recentDataQuery = query(
-      historicalRef,
-      orderByChild("timestamp"),
-      limitToLast(100)
-    )
-    
-    const snapshot = await get(recentDataQuery)
+    // Get all historical data without any queries to avoid index requirements
+    const snapshot = await get(historicalRef)
     
     if (snapshot.exists()) {
       const data = snapshot.val()
-      const dataPoints: HistoricalDataPoint[] = Object.values(data)
       
-      // Filter for last 24 hours and format for chart
+      // Convert to array and sort by timestamp
+      const dataPoints: HistoricalDataPoint[] = Object.values(data || {})
+      
+      if (dataPoints.length === 0) {
+        return []
+      }
+      
+      // Sort by timestamp (newest first) and take last 8 points for chart
       const chartData: ChartDataPoint[] = dataPoints
-        .filter(point => point.timestamp >= twentyFourHoursAgo)
-        .map(point => ({
-          time: new Date(point.timestamp).toLocaleTimeString("en-US", { 
-            hour: "2-digit", 
-            minute: "2-digit" 
-          }),
-          temperature: point.temperature,
-          humidity: point.humidity,
-          weight: point.weight,
-          gasLevel: point.gasLevel
-        }))
-        .slice(-24) // Keep only last 24 points
+        .sort((a, b) => b.timestamp - a.timestamp) // Sort newest first
+        .slice(0, 8) // Take last 8 entries
+        .reverse() // Reverse to show oldest to newest
+        .map(point => {
+          // Ensure timestamp is a valid number
+          const timestamp = typeof point.timestamp === 'number' ? point.timestamp : Date.now()
+          const date = new Date(timestamp)
+          
+          // Check if date is valid
+          if (isNaN(date.getTime())) {
+            console.warn('Invalid timestamp:', point.timestamp)
+            return {
+              time: new Date().toLocaleTimeString("en-US", { 
+                hour: "2-digit", 
+                minute: "2-digit",
+                second: "2-digit"
+              }),
+              temperature: point.temperature || 0,
+              humidity: point.humidity || 0,
+              weight: Math.abs(point.weight || 0), // Convert negative to positive
+              gasLevel: point.gasLevel || 0
+            }
+          }
+          
+          return {
+            time: date.toLocaleTimeString("en-US", { 
+              hour: "2-digit", 
+              minute: "2-digit",
+              second: "2-digit"
+            }),
+            temperature: point.temperature || 0,
+            humidity: point.humidity || 0,
+            weight: Math.abs(point.weight || 0), // Convert negative to positive
+            gasLevel: point.gasLevel || 0
+          }
+        })
       
       return chartData
     }
@@ -98,7 +121,11 @@ export function generateMockTrendData(): ChartDataPoint[] {
     const baseGas = 50 + Math.random() * 20
     
     data.push({
-      time: time.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+      time: time.toLocaleTimeString("en-US", { 
+        hour: "2-digit", 
+        minute: "2-digit",
+        second: "2-digit"
+      }),
       temperature: parseFloat((baseTemp + (Math.random() - 0.5) * 2).toFixed(2)),
       humidity: parseFloat((baseHumidity + (Math.random() - 0.5) * 4).toFixed(2)),
       weight: parseFloat((baseWeight + (Math.random() - 0.5) * 0.5).toFixed(2)),
@@ -107,4 +134,21 @@ export function generateMockTrendData(): ChartDataPoint[] {
   }
   
   return data
+}
+
+// Function to generate proper time labels for chart
+export function generateTimeLabels(count: number = 8): string[] {
+  const labels: string[] = []
+  const now = new Date()
+  
+  for (let i = count - 1; i >= 0; i--) {
+    const time = new Date(now.getTime() - (i * 60 * 60 * 1000)) // Every hour
+    labels.push(time.toLocaleTimeString("en-US", { 
+      hour: "2-digit", 
+      minute: "2-digit",
+      second: "2-digit"
+    }))
+  }
+  
+  return labels
 }

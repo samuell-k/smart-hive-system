@@ -11,6 +11,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -239,33 +247,68 @@ export default function ManageUsersPage() {
               <p className="text-muted-foreground">No users found</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {users.map((user) => (
-                <div
-                  key={user.id}
-                  className="flex items-center justify-between p-4 border border-border rounded-lg hover:border-primary transition-colors"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      {user.role === "admin" ? (
-                        <Shield className="h-5 w-5 text-primary" />
-                      ) : (
-                        <User className="h-5 w-5 text-primary" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">{user.displayName}</p>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Mail className="h-3 w-3" />
-                        {user.email}
-                      </div>
-                    </div>
-                  </div>
-                  <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-                    {user.role === "admin" ? "Administrator" : "Beekeeper"}
-                  </Badge>
-                </div>
-              ))}
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user.id} className="hover:bg-muted/50">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                            {user.role === "admin" ? (
+                              <Shield className="h-4 w-4 text-primary" />
+                            ) : (
+                              <User className="h-4 w-4 text-primary" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground">{user.displayName}</p>
+                            <p className="text-sm text-muted-foreground">ID: {user.id}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          {user.email}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={user.role === "admin" ? "default" : "secondary"}>
+                          {user.role === "admin" ? "Administrator" : "Beekeeper"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground">
+                          {user.createdAt?.toDate ? 
+                            user.createdAt.toDate().toLocaleDateString() : 
+                            new Date(user.createdAt).toLocaleDateString()
+                          }
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button variant="outline" size="sm">
+                            Edit
+                          </Button>
+                          <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                            Delete
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>

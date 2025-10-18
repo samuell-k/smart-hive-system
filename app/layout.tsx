@@ -11,11 +11,11 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Smart Hive Solutions - Beekeeping Management Platform",
-  description: "Intelligent beekeeping management system for monitoring, managing, and optimizing hive performance",
+  title: "Smart Hive Solutions - Professional Beekeeping Platform",
+  description: "AI-powered beekeeping management system for modern beekeepers. Find the best hive management for your beekeeping future.",
   generator: "v0.app",
   manifest: "/manifest.json",
-  themeColor: "#f59e0b",
+  themeColor: "#6A30D9",
   viewport: "width=device-width, initial-scale=1, maximum-scale=1",
   appleWebApp: {
     capable: true,

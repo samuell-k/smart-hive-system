@@ -12,24 +12,37 @@ import { Label } from "@/components/ui/label"
 import { Hexagon } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [fullName, setFullName] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-  const { signIn } = useAuth()
+  const { signUp } = useAuth()
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match")
+      return
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters")
+      return
+    }
+
     setLoading(true)
 
     try {
-      await signIn(email, password)
+      await signUp(email, password, fullName)
       router.push("/dashboard")
     } catch (err: any) {
-      setError(err.message || "Failed to sign in")
+      setError(err.message || "Failed to create account")
     } finally {
       setLoading(false)
     }
@@ -45,8 +58,8 @@ export default function LoginPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Welcome back</CardTitle>
-            <CardDescription>Sign in to your account to continue</CardDescription>
+            <CardTitle>Create your account</CardTitle>
+            <CardDescription>Join Smart Hive Solutions to start managing your beekeeping operations</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -55,6 +68,18 @@ export default function LoginPage() {
                   {error}
                 </div>
               )}
+
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  placeholder="John Doe"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                />
+              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -67,22 +92,46 @@ export default function LoginPage() {
                   required
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
                   type="password"
+                  placeholder="Minimum 6 characters"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="Confirm your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+              </div>
+
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Signing in..." : "Sign In"}
+                {loading ? "Creating account..." : "Create Account"}
               </Button>
             </form>
           </CardContent>
         </Card>
+
+        <div className="mt-6 text-center">
+          <div className="text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link href="/login" className="text-primary hover:text-primary/80 font-medium transition-colors">
+              Sign in here
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   )

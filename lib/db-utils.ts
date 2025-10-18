@@ -36,8 +36,11 @@ export interface Training {
   description: string
   content: string
   category: string
+  difficulty?: string
+  duration?: string
   videoUrl?: string
   documentUrl?: string
+  imageUrl?: string
   uploadedBy: string
   createdAt: Date
   updatedAt: Date
@@ -231,6 +234,18 @@ export async function getUserNotifications(userId: string): Promise<Notification
 
 export async function markNotificationAsRead(notificationId: string) {
   await updateDocument("notifications", notificationId, { read: true })
+}
+
+export async function deleteNotification(notificationId: string) {
+  await deleteDocument("notifications", notificationId)
+}
+
+export async function deleteAllNotifications(userId: string) {
+  const notifications = await getUserNotifications(userId)
+  const deletePromises = notifications.map(notification => 
+    deleteDocument("notifications", notification.id!)
+  )
+  await Promise.all(deletePromises)
 }
 
 // Marketplace-specific operations

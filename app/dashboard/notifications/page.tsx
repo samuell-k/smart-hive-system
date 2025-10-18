@@ -2,9 +2,82 @@
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { getUserNotifications, markNotificationAsRead } from "@/lib/db-utils"
+import { getUserNotifications, markNotificationAsRead, deleteNotification, deleteAllNotifications } from "@/lib/db-utils"
 import type { Notification } from "@/lib/db-utils"
-import { CheckCircle, AlertTriangle, AlertCircle, Info } from "lucide-react"
+import { 
+  CheckCircle, 
+  AlertTriangle, 
+  AlertCircle, 
+  Info, 
+  Bell,
+  Thermometer,
+  Droplets,
+  Weight,
+  Wind,
+  Wifi,
+  WifiOff,
+  Clock,
+  X,
+  Trash2,
+  Trash
+} from "lucide-react"
+
+// Helper function to format dates properly with relative time
+function formatDateForDisplay(date: any): string {
+  try {
+    if (!date) return "No date"
+    
+    let dateObj: Date
+    
+    // Handle Firestore Timestamp
+    if (date.toDate && typeof date.toDate === "function") {
+      dateObj = date.toDate()
+    }
+    // Handle regular Date object
+    else if (date instanceof Date) {
+      dateObj = date
+    }
+    // Handle timestamp number
+    else if (typeof date === 'number') {
+      dateObj = new Date(date)
+    }
+    // Handle string date
+    else if (typeof date === 'string') {
+      dateObj = new Date(date)
+    }
+    // Try to parse as string
+    else {
+      dateObj = new Date(date)
+    }
+    
+    if (isNaN(dateObj.getTime())) {
+      return "Invalid date"
+    }
+    
+    const now = new Date()
+    const diffInSeconds = Math.floor((now.getTime() - dateObj.getTime()) / 1000)
+    
+    // Show relative time for recent dates
+    if (diffInSeconds < 60) {
+      return "Just now"
+    } else if (diffInSeconds < 3600) {
+      const minutes = Math.floor(diffInSeconds / 60)
+      return `${minutes} minute${minutes > 1 ? 's' : ''} ago`
+    } else if (diffInSeconds < 86400) {
+      const hours = Math.floor(diffInSeconds / 3600)
+      return `${hours} hour${hours > 1 ? 's' : ''} ago`
+    } else if (diffInSeconds < 604800) {
+      const days = Math.floor(diffInSeconds / 86400)
+      return `${days} day${days > 1 ? 's' : ''} ago`
+    } else {
+      // For older dates, show the actual date
+      return dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+  } catch (error) {
+    console.error('Error formatting date:', error, date)
+    return "Invalid date"
+  }
+}
 
 export default function NotificationsPage() {
   const { userData } = useAuth()
@@ -33,12 +106,57 @@ export default function NotificationsPage() {
     try {
       await markNotificationAsRead(notificationId)
       setNotifications(notifications.map((n) => (n.id === notificationId ? { ...n, read: true } : n)))
+      
+      // Dispatch custom event to update sidebar count
+      window.dispatchEvent(new CustomEvent('notificationRead'))
     } catch (error) {
       console.error("Error marking notification as read:", error)
     }
   }
 
-  const getIcon = (type: string) => {
+  const handleDeleteNotification = async (notificationId: string) => {
+    try {
+      await deleteNotification(notificationId)
+      setNotifications(notifications.filter((n) => n.id !== notificationId))
+      
+      // Dispatch custom event to update sidebar count
+      window.dispatchEvent(new CustomEvent('notificationRead'))
+    } catch (error) {
+      console.error("Error deleting notification:", error)
+    }
+  }
+
+  const handleClearAllNotifications = async () => {
+    if (!userData?.uid) return
+    
+    try {
+      await deleteAllNotifications(userData.uid)
+      setNotifications([])
+      
+      // Dispatch custom event to update sidebar count
+      window.dispatchEvent(new CustomEvent('notificationRead'))
+    } catch (error) {
+      console.error("Error clearing all notifications:", error)
+    }
+  }
+
+  const getIcon = (type: string, title: string) => {
+    // Check for specific alert types based on title
+    if (title.includes("Temperature")) {
+      return <Thermometer className="h-5 w-5 text-orange-500" />
+    } else if (title.includes("Humidity")) {
+      return <Droplets className="h-5 w-5 text-blue-500" />
+    } else if (title.includes("Weight")) {
+      return <Weight className="h-5 w-5 text-purple-500" />
+    } else if (title.includes("Gas")) {
+      return <Wind className="h-5 w-5 text-red-500" />
+    } else if (title.includes("Hive Down")) {
+      return <Wifi className="h-5 w-5 text-orange-500" />
+    } else if (title.includes("Hive Offline")) {
+      return <WifiOff className="h-5 w-5 text-red-500" />
+    }
+    
+    // Fallback to type-based icons
     switch (type) {
       case "success":
         return <CheckCircle className="h-5 w-5 text-green-500" />
@@ -54,60 +172,115 @@ export default function NotificationsPage() {
   const unreadCount = notifications.filter((n) => !n.read).length
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Notifications</h1>
-          <p className="text-muted-foreground">Stay updated with your hive alerts and system messages</p>
+    <div className="space-y-8">
+      {/* Header Section */}
+      <div className="relative bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-2xl p-8 text-white overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -translate-y-16 translate-x-16"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full translate-y-12 -translate-x-12"></div>
         </div>
-        {unreadCount > 0 && (
-          <div className="text-sm bg-primary text-primary-foreground rounded px-2 py-1">{unreadCount} unread</div>
-        )}
+        
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
+              <div className="h-12 w-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <Bell className="h-6 w-6 text-white" />
+              </div>
+              Notifications
+            </h1>
+            <p className="text-blue-100 text-lg">Stay updated with your hive alerts and system messages</p>
+          </div>
+          <div className="flex items-center gap-3">
+            {unreadCount > 0 && (
+              <div className="bg-white/20 backdrop-blur-sm text-white rounded-full px-4 py-2 flex items-center gap-2">
+                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                <span className="font-semibold">{unreadCount} unread</span>
+              </div>
+            )}
+            {notifications.length > 0 && (
+              <button
+                onClick={handleClearAllNotifications}
+                className="bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2 transition-all duration-200 hover:scale-105"
+              >
+                <Trash2 className="h-4 w-4" />
+                Clear All
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {loading ? (
-        <div className="text-center py-12">
-          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading notifications...</p>
+        <div className="text-center py-16">
+          <div className="h-12 w-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-6" />
+          <p className="text-muted-foreground text-lg">Loading notifications...</p>
         </div>
       ) : notifications.length === 0 ? (
-        <div className="space-y-3">
-          <div className="bg-card text-card-foreground rounded-lg shadow-sm">
-            <div className="p-6 text-center">
-              <div className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No notifications</h3>
-              <p className="text-muted-foreground">You're all caught up!</p>
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border-2 border-dashed border-gray-200">
+          <div className="p-16 text-center">
+            <div className="h-20 w-20 rounded-full bg-gray-200 flex items-center justify-center mx-auto mb-6">
+              <Bell className="h-10 w-10 text-gray-400" />
             </div>
+            <h3 className="text-2xl font-semibold text-gray-700 mb-3">No notifications</h3>
+            <p className="text-gray-500 text-lg">You're all caught up! Your hives are running smoothly.</p>
           </div>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {notifications.map((notification) => (
             <div
               key={notification.id}
-              className={`bg-card text-card-foreground rounded-lg shadow-sm ${
-                notification.read ? "opacity-60" : "border-primary/50"
+              className={`bg-white rounded-xl shadow-lg border-2 transition-all duration-300 hover:shadow-xl hover:scale-[1.01] ${
+                notification.read 
+                  ? "opacity-70 border-gray-200" 
+                  : notification.type === "success"
+                    ? "border-green-200 bg-gradient-to-r from-green-50/50 to-emerald-50/50"
+                    : "border-blue-200 bg-gradient-to-r from-blue-50/50 to-indigo-50/50"
               }`}
             >
               <div className="p-6 flex items-start gap-4">
-                <div className="flex-shrink-0 mt-1">{getIcon(notification.type)}</div>
+                <div className="flex-shrink-0 mt-1">
+                  {getIcon(notification.type, notification.title)}
+                </div>
                 <div className="flex-1">
                   <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="text-base font-semibold mb-1">{notification.title}</div>
-                      <div className="text-sm mb-2">{notification.message}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(notification.createdAt).toLocaleString()}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900">{notification.title}</h3>
+                        {!notification.read && (
+                          <div className={`w-2 h-2 rounded-full animate-pulse ${
+                            notification.type === "success" ? "bg-green-500" : "bg-blue-500"
+                          }`}></div>
+                        )}
+                      </div>
+                      <p className="text-gray-700 mb-3 leading-relaxed">{notification.message}</p>
+                      <div className="flex items-center gap-1 text-sm text-gray-500">
+                        <Clock className="h-4 w-4" />
+                        <span>{formatDateForDisplay(notification.createdAt)}</span>
                       </div>
                     </div>
-                    {!notification.read && (
+                    <div className="flex items-center gap-2">
+                      {!notification.read && (
+                        <button
+                          className={`text-sm font-semibold px-3 py-1 rounded-full transition-colors duration-200 ${
+                            notification.type === "success"
+                              ? "text-green-600 hover:text-green-800 bg-green-100 hover:bg-green-200"
+                              : "text-blue-600 hover:text-blue-800 bg-blue-100 hover:bg-blue-200"
+                          }`}
+                          onClick={() => handleMarkAsRead(notification.id!)}
+                        >
+                          Mark as read
+                        </button>
+                      )}
                       <button
-                        className="text-sm font-semibold text-primary hover:text-primary/80"
-                        onClick={() => handleMarkAsRead(notification.id!)}
+                        className="text-sm font-semibold px-3 py-1 rounded-full transition-colors duration-200 text-red-600 hover:text-red-800 bg-red-100 hover:bg-red-200"
+                        onClick={() => handleDeleteNotification(notification.id!)}
+                        title="Delete notification"
                       >
-                        Mark as read
+                        <Trash className="h-3 w-3" />
                       </button>
-                    )}
+                    </div>
                   </div>
                 </div>
               </div>
