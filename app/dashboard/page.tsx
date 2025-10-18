@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Hexagon, Plus, Bell, BookOpen, Activity, Droplets, Weight, Wind, X } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { getUserHives, getAllHives } from "@/lib/db-utils"
+import { subscribeToHiveData, getMetricStatus, type HiveMetrics } from "@/lib/realtime-db-utils"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { XAxis, YAxis, CartesianGrid, ResponsiveContainer, Line, LineChart, Legend } from "recharts"
@@ -36,12 +37,13 @@ export default function DashboardPage() {
   const [showWelcomeBanner, setShowWelcomeBanner] = useState(true)
   const isAdmin = userData?.role === "admin"
 
-  const [hiveStats, setHiveStats] = useState({
-    temperature: 34,
-    humidity: 75,
-    weight: 17.9,
+  const [hiveStats, setHiveStats] = useState<HiveMetrics>({
+    temperature: 0,
+    humidity: 0,
+    weight: 0,
     gasLevel: 0,
   })
+  const [realtimeData, setRealtimeData] = useState<HiveMetrics | null>(null)
 
   const [trendData] = useState(generateMockData())
 
@@ -63,34 +65,24 @@ export default function DashboardPage() {
     loadHiveData()
   }, [user, isAdmin])
 
-  const getTemperatureStatus = (temp: number) => {
-    if (temp >= 32 && temp <= 36) return "optimal"
-    if (temp >= 30 && temp <= 38) return "warning"
-    return "danger"
-  }
+  // Set up real-time listener for hive metrics
+  useEffect(() => {
+    const unsubscribe = subscribeToHiveData((data) => {
+      if (data) {
+        setRealtimeData(data)
+        setHiveStats(data)
+      }
+    })
 
-  const getHumidityStatus = (humidity: number) => {
-    if (humidity >= 50 && humidity <= 60) return "optimal"
-    if (humidity >= 45 && humidity <= 70) return "warning"
-    return "danger"
-  }
+    return () => {
+      unsubscribe()
+    }
+  }, [])
 
-  const getWeightStatus = (weight: number) => {
-    if (weight >= 12 && weight <= 20) return "optimal"
-    if (weight >= 10 && weight <= 22) return "warning"
-    return "danger"
-  }
-
-  const getGasStatus = (gas: number) => {
-    if (gas < 200) return "optimal"
-    if (gas < 500) return "warning"
-    return "danger"
-  }
-
-  const temperatureStatus = getTemperatureStatus(hiveStats.temperature)
-  const humidityStatus = getHumidityStatus(hiveStats.humidity)
-  const weightStatus = getWeightStatus(hiveStats.weight)
-  const gasStatus = getGasStatus(hiveStats.gasLevel)
+  const temperatureStatus = getMetricStatus(hiveStats.temperature, 'temperature')
+  const humidityStatus = getMetricStatus(hiveStats.humidity, 'humidity')
+  const weightStatus = getMetricStatus(hiveStats.weight, 'weight')
+  const gasStatus = getMetricStatus(hiveStats.gasLevel, 'gasLevel')
 
   return (
     <div className="space-y-8">
@@ -123,6 +115,12 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground mt-1">
             Welcome back, {userData?.displayName}! Here's your hive overview.
+            {realtimeData && (
+              <span className="ml-2 inline-flex items-center gap-1 text-green-600 text-sm">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                Live Data
+              </span>
+            )}
           </p>
         </div>
         <Link href="/dashboard/hives">
