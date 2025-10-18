@@ -6,12 +6,28 @@ import { Hexagon, Plus, Bell, BookOpen, Activity, Droplets, Weight, Wind, X } fr
 import { useAuth } from "@/lib/auth-context"
 import { getUserHives, getAllHives } from "@/lib/db-utils"
 import { subscribeToHiveData, getMetricStatus, type HiveMetrics } from "@/lib/realtime-db-utils"
-import { getHistoricalData, storeHistoricalData, generateMockTrendData, type ChartDataPoint } from "@/lib/historical-data-utils"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { XAxis, YAxis, CartesianGrid, ResponsiveContainer, Line, LineChart, Legend } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 
+const generateMockData = () => {
+  const now = new Date()
+  const data = []
+
+  for (let i = 23; i >= 0; i--) {
+    const date = new Date(now.getTime() - i * 60 * 60 * 1000)
+    data.push({
+      time: date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+      temperature: 32 + Math.random() * 6,
+      humidity: 45 + Math.random() * 30,
+      weight: 15 + Math.random() * 5,
+      gasLevel: Math.random() * 150,
+    })
+  }
+
+  return data
+}
 
 export default function DashboardPage() {
   const { userData, user } = useAuth()
@@ -28,8 +44,8 @@ export default function DashboardPage() {
     gasLevel: 0,
   })
   const [realtimeData, setRealtimeData] = useState<HiveMetrics | null>(null)
-  const [trendData, setTrendData] = useState<ChartDataPoint[]>([])
-  const [chartLoading, setChartLoading] = useState(true)
+
+  const [trendData] = useState(generateMockData())
 
   useEffect(() => {
     const loadHiveData = async () => {
@@ -49,60 +65,12 @@ export default function DashboardPage() {
     loadHiveData()
   }, [user, isAdmin])
 
-  // Load historical data for trends chart
-  useEffect(() => {
-    const loadHistoricalData = async () => {
-      try {
-        const historicalData = await getHistoricalData()
-        if (historicalData.length > 0) {
-          setTrendData(historicalData)
-        } else {
-          // Use mock data if no historical data available
-          setTrendData(generateMockTrendData())
-        }
-      } catch (error) {
-        console.error("Error loading historical data:", error)
-        setTrendData(generateMockTrendData())
-      } finally {
-        setChartLoading(false)
-      }
-    }
-
-    loadHistoricalData()
-  }, [])
-
   // Set up real-time listener for hive metrics
   useEffect(() => {
     const unsubscribe = subscribeToHiveData((data) => {
       if (data) {
         setRealtimeData(data)
         setHiveStats(data)
-        
-        // Store current data as historical point
-        storeHistoricalData(data)
-        
-        // Update trend data with new point
-        setTrendData(prevData => {
-          const newDataPoint: ChartDataPoint = {
-            time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-            temperature: parseFloat(data.temperature.toFixed(2)),
-            humidity: parseFloat(data.humidity.toFixed(2)),
-            weight: data.weight < 0 ? 0 : parseFloat(data.weight.toFixed(2)),
-            gasLevel: parseFloat(data.gasLevel.toFixed(2))
-          }
-          
-          // Add new point and keep only last 24 points
-          const updatedData = [...prevData, newDataPoint].slice(-24)
-          return updatedData
-        })
-      } else {
-        // Fallback to default values if no real-time data
-        setHiveStats({
-          temperature: 34,
-          humidity: 75,
-          weight: 17.9,
-          gasLevel: 0,
-        })
       }
     })
 
@@ -110,6 +78,7 @@ export default function DashboardPage() {
       unsubscribe()
     }
   }, [])
+
   const temperatureStatus = getMetricStatus(hiveStats.temperature, 'temperature')
   const humidityStatus = getMetricStatus(hiveStats.humidity, 'humidity')
   const weightStatus = getMetricStatus(hiveStats.weight, 'weight')
@@ -148,7 +117,7 @@ export default function DashboardPage() {
             Welcome back, {userData?.displayName}! Here's your hive overview.
             {realtimeData && (
               <span className="ml-2 inline-flex items-center gap-1 text-green-600 text-sm">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse inline-block"></span>
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 Live Data
               </span>
             )}
@@ -193,9 +162,9 @@ export default function DashboardPage() {
             <div
               className={`text-2xl font-bold ${temperatureStatus === "optimal" ? "text-green-600" : temperatureStatus === "warning" ? "text-yellow-600" : "text-red-600"}`}
             >
-              {hiveStats.temperature.toFixed(2)}°C
+              {hiveStats.temperature}°C
             </div>
-            <p className="text-xs text-muted-foreground">Optimal range: 32°C ---- 36°C</p>
+            <p className="text-xs text-muted-foreground">Optimal range: 32°C - 36°C</p>
           </CardContent>
         </Card>
 
@@ -218,9 +187,9 @@ export default function DashboardPage() {
             <div
               className={`text-2xl font-bold ${humidityStatus === "optimal" ? "text-green-600" : humidityStatus === "warning" ? "text-yellow-600" : "text-red-600"}`}
             >
-              {hiveStats.humidity.toFixed(2)}%
+              {hiveStats.humidity}%
             </div>
-            <p className="text-xs text-muted-foreground">Optimal range: 50% ---- 60%</p>
+            <p className="text-xs text-muted-foreground">Optimal range: 50% - 60%</p>
           </CardContent>
         </Card>
 
@@ -243,9 +212,9 @@ export default function DashboardPage() {
             <div
               className={`text-2xl font-bold ${weightStatus === "optimal" ? "text-green-600" : weightStatus === "warning" ? "text-yellow-600" : "text-red-600"}`}
             >
-              {hiveStats.weight < 0 ? "-----" : `${hiveStats.weight.toFixed(2)}kg`}
+              {hiveStats.weight}kg
             </div>
-            <p className="text-xs text-muted-foreground">Target weight: 12kg ---- 20kg</p>
+            <p className="text-xs text-muted-foreground">Target weight: 12kg - 20kg</p>
           </CardContent>
         </Card>
 
@@ -268,7 +237,7 @@ export default function DashboardPage() {
             <div
               className={`text-2xl font-bold ${gasStatus === "optimal" ? "text-green-600" : gasStatus === "warning" ? "text-yellow-600" : "text-red-600"}`}
             >
-              {hiveStats.gasLevel.toFixed(2)} ppm
+              {hiveStats.gasLevel} ppm
             </div>
             <p className="text-xs text-muted-foreground">Safe range: {"<"} 200 ppm</p>
           </CardContent>
@@ -283,92 +252,65 @@ export default function DashboardPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {chartLoading ? (
-            <div className="h-[350px] flex items-center justify-center">
-              <div className="text-center">
-                <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-muted-foreground">Loading trend data...</p>
-              </div>
-            </div>
-          ) : (
-            <ChartContainer
-              config={{
-                temperature: {
-                  label: "Temperature (°C)",
-                  color: "hsl(var(--chart-1))",
-                },
-                humidity: {
-                  label: "Humidity (%)",
-                  color: "hsl(var(--chart-2))",
-                },
-                weight: {
-                  label: "Weight (kg)",
-                  color: "hsl(var(--chart-3))",
-                },
-                gasLevel: {
-                  label: "Gas Level (ppm)",
-                  color: "hsl(var(--chart-4))",
-                },
-              }}
-              className="h-[350px]"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={trendData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="time" 
-                    tick={{ fontSize: 12 }}
-                    interval="preserveStartEnd"
-                  />
-                  <YAxis 
-                    tick={{ fontSize: 12 }}
-                    domain={[0, 'dataMax + 10']}
-                  />
-                  <ChartTooltip 
-                    content={<ChartTooltipContent />}
-                    labelFormatter={(value) => `Time: ${value}`}
-                  />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="temperature"
-                    stroke="var(--color-temperature)"
-                    name="Temperature (°C)"
-                    strokeWidth={3}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="humidity"
-                    stroke="var(--color-humidity)"
-                    name="Humidity (%)"
-                    strokeWidth={3}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="weight"
-                    stroke="var(--color-weight)"
-                    name="Weight (kg)"
-                    strokeWidth={3}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="gasLevel"
-                    stroke="var(--color-gasLevel)"
-                    name="Gas Level (ppm)"
-                    strokeWidth={3}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          )}
+          <ChartContainer
+            config={{
+              temperature: {
+                label: "Temperature (°C)",
+                color: "hsl(var(--chart-1))",
+              },
+              humidity: {
+                label: "Humidity (%)",
+                color: "hsl(var(--chart-2))",
+              },
+              weight: {
+                label: "Weight (kg)",
+                color: "hsl(var(--chart-3))",
+              },
+              gasLevel: {
+                label: "Gas Level (ppm)",
+                color: "hsl(var(--chart-4))",
+              },
+            }}
+            className="h-[350px]"
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trendData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="time" />
+                <YAxis />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="gasLevel"
+                  stroke="var(--color-gasLevel)"
+                  name="Gas Level (ppm)"
+                  strokeWidth={2}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="humidity"
+                  stroke="var(--color-humidity)"
+                  name="Humidity (%)"
+                  strokeWidth={2}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="temperature"
+                  stroke="var(--color-temperature)"
+                  name="Temperature (°C)"
+                  strokeWidth={2}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="weight"
+                  stroke="var(--color-weight)"
+                  name="Weight (kg)"
+                  strokeWidth={2}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartContainer>
         </CardContent>
       </Card>
 

@@ -47,49 +47,34 @@ export async function getCurrentHiveData(): Promise<HiveMetrics | null> {
 export function subscribeToHiveData(
   callback: (data: HiveMetrics | null) => void
 ): () => void {
-  try {
-    const hiveDataRef = ref(database, "HiveData")
-    
-    const handleDataChange = (snapshot: any) => {
-      try {
-        if (snapshot.exists()) {
-          const data: RealtimeHiveData = snapshot.val()
-          const processedData: HiveMetrics = {
-            temperature: data.Temperature || 0,
-            humidity: data.Humidity || 0,
-            weight: data.Weight || 0,
-            gasLevel: data.GasLevel || 0
-          }
-          callback(processedData)
-        } else {
-          callback(null)
-        }
-      } catch (error) {
-        console.error("Error processing snapshot data:", error)
-        callback(null)
+  const hiveDataRef = ref(database, "HiveData")
+  
+  const handleDataChange = (snapshot: any) => {
+    if (snapshot.exists()) {
+      const data: RealtimeHiveData = snapshot.val()
+      const processedData: HiveMetrics = {
+        temperature: data.Temperature,
+        humidity: data.Humidity,
+        weight: data.Weight,
+        gasLevel: data.GasLevel
       }
-    }
-
-    const handleError = (error: any) => {
-      console.error("Error in real-time listener:", error)
+      callback(processedData)
+    } else {
       callback(null)
     }
+  }
 
-    // Set up the listener
-    onValue(hiveDataRef, handleDataChange, handleError)
-
-    // Return unsubscribe function
-    return () => {
-      try {
-        off(hiveDataRef, "value", handleDataChange)
-      } catch (error) {
-        console.error("Error unsubscribing from listener:", error)
-      }
-    }
-  } catch (error) {
-    console.error("Error setting up real-time listener:", error)
+  const handleError = (error: any) => {
+    console.error("Error in real-time listener:", error)
     callback(null)
-    return () => {} // Return empty unsubscribe function
+  }
+
+  // Set up the listener
+  onValue(hiveDataRef, handleDataChange, handleError)
+
+  // Return unsubscribe function
+  return () => {
+    off(hiveDataRef, "value", handleDataChange)
   }
 }
 
