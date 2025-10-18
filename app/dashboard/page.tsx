@@ -110,7 +110,6 @@ export default function DashboardPage() {
       unsubscribe()
     }
   }, [])
-
   const temperatureStatus = getMetricStatus(hiveStats.temperature, 'temperature')
   const humidityStatus = getMetricStatus(hiveStats.humidity, 'humidity')
   const weightStatus = getMetricStatus(hiveStats.weight, 'weight')
