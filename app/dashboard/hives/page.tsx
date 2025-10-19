@@ -23,6 +23,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Plus, MapPin, Calendar, MoreVertical, Edit, Trash2, Hexagon, User } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
@@ -41,6 +52,8 @@ export default function HivesPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingHive, setEditingHive] = useState<Hive | null>(null)
   const [usersMap, setUsersMap] = useState<Record<string, UserData>>({})
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [hiveToDelete, setHiveToDelete] = useState<Hive | null>(null)
 
   // Form state
   const [location, setLocation] = useState("")
@@ -179,40 +192,46 @@ export default function HivesPage() {
     }
   }
 
-  const handleDelete = async (hiveId: string) => {
-    const hive = hives.find((h) => h.id === hiveId)
-    if (!isAdmin && hive?.userId !== userData?.uid) {
+  const handleDeleteClick = (hive: Hive) => {
+    if (!isAdmin && hive.userId !== userData?.uid) {
       return
     }
+    setHiveToDelete(hive)
+    setDeleteDialogOpen(true)
+  }
 
-    if (!confirm("Are you sure you want to delete this hive?")) return
+  const handleDeleteConfirm = async () => {
+    if (!hiveToDelete?.id) return
 
     try {
-      await deleteDocument("hives", hiveId)
+      await deleteDocument("hives", hiveToDelete.id)
       await loadHives()
     } catch (error) {
       console.error("Error deleting hive:", error)
+    } finally {
+      setDeleteDialogOpen(false)
+      setHiveToDelete(null)
     }
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">{isAdmin ? "All Hives" : "My Hives"}</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{isAdmin ? "All Hives" : "My Hives"}</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
             {isAdmin ? "View and manage all registered hives" : "View and manage your registered hives"}
           </p>
         </div>
         {!isAdmin && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={() => handleOpenDialog()} className="cursor-pointer">
+              <Button onClick={() => handleOpenDialog()} className="cursor-pointer w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Hive
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>{editingHive ? "Edit Hive" : "Add New Hive"}</DialogTitle>
                 <DialogDescription>
@@ -253,8 +272,8 @@ export default function HivesPage() {
                   />
                 </div>
 
-                <div className="flex gap-2">
-                  <Button type="submit" disabled={submitting} className="flex-1">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button type="submit" disabled={submitting} className="w-full sm:flex-1">
                     {submitting ? "Saving..." : editingHive ? "Update Hive" : "Add Hive"}
                   </Button>
                   <Button
@@ -264,6 +283,7 @@ export default function HivesPage() {
                       setDialogOpen(false)
                       resetForm()
                     }}
+                    className="w-full sm:w-auto"
                   >
                     Cancel
                   </Button>
@@ -300,11 +320,14 @@ export default function HivesPage() {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>All Hives</CardTitle>
-            <p className="text-sm text-muted-foreground">View and manage all registered hives</p>
+            <CardTitle>{isAdmin ? "All Hives" : "My Hives"}</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              {isAdmin ? "View and manage all registered hives" : "View and manage your registered hives"}
+            </p>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
+            {/* Desktop Table View */}
+            <div className="hidden lg:block rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -380,15 +403,36 @@ export default function HivesPage() {
                               <Edit className="h-4 w-4 mr-1" />
                               Edit
                             </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => handleDelete(hive.id!)}
-                            >
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              Delete
-                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-1" />
+                                  Delete
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Hive</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete <strong>{hive.hiveNumber}</strong>? 
+                                    This action cannot be undone and will permanently remove the hive from the system.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeleteClick(hive)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Delete Hive
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         )}
                       </TableCell>
@@ -397,9 +441,122 @@ export default function HivesPage() {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Mobile Card View */}
+            <div className="lg:hidden space-y-4">
+              {hives.map((hive) => (
+                <Card key={hive.id} className="p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Hexagon className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">{hive.hiveNumber}</p>
+                        <p className="text-xs text-muted-foreground">ID: {hive.id?.slice(0, 8)}...</p>
+                      </div>
+                    </div>
+                    <Badge
+                      variant={
+                        hive.status === "confirmed" ? "default" : hive.status === "pending" ? "secondary" : "outline"
+                      }
+                    >
+                      {hive.status}
+                    </Badge>
+                  </div>
+                  
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center gap-2 text-sm">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">{hive.location}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">{hive.userName}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">{formatDateForDisplay(hive.installationDate)}</span>
+                    </div>
+                    {isAdmin && (
+                      <div className="text-sm text-muted-foreground">
+                        Owner: {usersMap[hive.userId] && hive.userId !== userData?.uid ? 
+                          usersMap[hive.userId].fullName : "You"}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {(!isAdmin || hive.userId === userData?.uid) && (
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleOpenDialog(hive)}
+                        className="flex-1"
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Hive</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete <strong>{hive.hiveNumber}</strong>? 
+                              This action cannot be undone and will permanently remove the hive from the system.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteClick(hive)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete Hive
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  )}
+                </Card>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Hive</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{hiveToDelete?.hiveNumber}</strong>? 
+              This action cannot be undone and will permanently remove the hive from the system.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Hive
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -11,7 +11,18 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { createDocument } from "@/lib/db-utils"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { createDocument, getAllTrainings, deleteDocument } from "@/lib/db-utils"
 import type { Training } from "@/lib/db-utils"
 import { 
   Upload, 
@@ -29,7 +40,12 @@ import {
   GraduationCap,
   FileVideo,
   FileImage,
-  File
+  File,
+  Trash2,
+  Edit,
+  Clock,
+  Play,
+  ChevronRight
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 
@@ -47,6 +63,11 @@ export default function UploadTrainingPage() {
   const [imageUrl, setImageUrl] = useState("")
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [existingTrainings, setExistingTrainings] = useState<Training[]>([])
+  const [loadingTrainings, setLoadingTrainings] = useState(true)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [trainingToDelete, setTrainingToDelete] = useState<Training | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const categories = [
     { id: "basics", name: "Basics", icon: Star, color: "bg-green-500", description: "Fundamental beekeeping concepts" },
@@ -69,6 +90,21 @@ export default function UploadTrainingPage() {
       router.push("/dashboard")
     }
   }, [userData, router])
+
+  useEffect(() => {
+    loadExistingTrainings()
+  }, [])
+
+  const loadExistingTrainings = async () => {
+    try {
+      const trainingsData = await getAllTrainings()
+      setExistingTrainings(trainingsData)
+    } catch (error) {
+      console.error("Error loading trainings:", error)
+    } finally {
+      setLoadingTrainings(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -108,6 +144,9 @@ export default function UploadTrainingPage() {
       await createDocument<Training>("trainings", trainingData as Omit<Training, "id">)
       setSuccess(true)
 
+      // Reload existing trainings
+      await loadExistingTrainings()
+
       // Reset form
       setTitle("")
       setDescription("")
@@ -125,6 +164,50 @@ export default function UploadTrainingPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleDeleteClick = (training: Training) => {
+    setTrainingToDelete(training)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!trainingToDelete?.id) return
+
+    setDeleting(true)
+    try {
+      await deleteDocument("trainings", trainingToDelete.id)
+      await loadExistingTrainings()
+    } catch (error) {
+      console.error("Error deleting training:", error)
+    } finally {
+      setDeleting(false)
+      setDeleteDialogOpen(false)
+      setTrainingToDelete(null)
+    }
+  }
+
+  const formatDateForDisplay = (date: any): string => {
+    try {
+      if (!date) return "No date"
+      if (date.toDate && typeof date.toDate === "function") {
+        return date.toDate().toLocaleDateString()
+      }
+      if (date instanceof Date) {
+        return date.toLocaleDateString()
+      }
+      return new Date(date).toLocaleDateString()
+    } catch (error) {
+      return "Invalid date"
+    }
+  }
+
+  const getCategoryInfo = (categoryId: string) => {
+    return categories.find(cat => cat.id === categoryId) || categories[0]
+  }
+
+  const getDifficultyInfo = (difficultyId: string) => {
+    return difficulties.find(diff => diff.id === difficultyId) || difficulties[0]
   }
 
   if (!userData || userData.role !== "admin") {
@@ -148,13 +231,13 @@ export default function UploadTrainingPage() {
         </div>
         
         <div className="relative z-10">
-          <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <GraduationCap className="h-6 w-6 text-white" />
+          <h1 className="text-2xl sm:text-4xl font-bold mb-2 flex items-center gap-3">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
             Upload Training Material
           </h1>
-          <p className="text-blue-100 text-lg">Add new educational content for beekeepers</p>
+          <p className="text-blue-100 text-base sm:text-lg">Add new educational content for beekeepers</p>
         </div>
       </div>
 
@@ -176,7 +259,7 @@ export default function UploadTrainingPage() {
       )}
 
       {/* Main Form */}
-      <div className="grid lg:grid-cols-3 gap-8">
+      <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
         {/* Form Section */}
         <div className="lg:col-span-2">
           <Card className="shadow-xl border-2">
@@ -342,7 +425,7 @@ export default function UploadTrainingPage() {
                 <Button 
                   type="submit" 
                   disabled={loading} 
-                  className="w-full h-14 text-lg bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                  className="w-full h-12 sm:h-14 text-base sm:text-lg bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
                 >
                   {loading ? (
                     <div className="flex items-center gap-2">
@@ -428,6 +511,200 @@ export default function UploadTrainingPage() {
           </div>
         </div>
       </div>
+
+      {/* Existing Trainings Section */}
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Manage Existing Trainings</h2>
+          <p className="text-muted-foreground">View and manage all uploaded training materials</p>
+        </div>
+
+        {loadingTrainings ? (
+          <div className="text-center py-12">
+            <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading trainings...</p>
+          </div>
+        ) : existingTrainings.length === 0 ? (
+          <Card>
+            <CardContent className="py-12">
+              <div className="text-center">
+                <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">No training materials yet</h3>
+                <p className="text-muted-foreground">Upload your first training material using the form above</p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden lg:block">
+              <Card>
+                <CardHeader>
+                  <CardTitle>All Training Materials</CardTitle>
+                  <p className="text-sm text-muted-foreground">Manage existing training content</p>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left p-4 font-medium">Training</th>
+                            <th className="text-left p-4 font-medium">Category</th>
+                            <th className="text-left p-4 font-medium">Difficulty</th>
+                            <th className="text-left p-4 font-medium">Created</th>
+                            <th className="text-left p-4 font-medium">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {existingTrainings.map((training) => {
+                            const categoryInfo = getCategoryInfo(training.category)
+                            const difficultyInfo = getDifficultyInfo(training.difficulty || "beginner")
+                            const IconComponent = categoryInfo.icon
+                            return (
+                              <tr key={training.id} className="border-b hover:bg-muted/50">
+                                <td className="p-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className={`h-8 w-8 rounded-lg ${categoryInfo.color} flex items-center justify-center`}>
+                                      <IconComponent className="h-4 w-4 text-white" />
+                                    </div>
+                                    <div>
+                                      <p className="font-medium text-foreground">{training.title}</p>
+                                      <p className="text-sm text-muted-foreground line-clamp-1">{training.description}</p>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="p-4">
+                                  <Badge variant="secondary" className={`${categoryInfo.color} text-white`}>
+                                    {categoryInfo.name}
+                                  </Badge>
+                                </td>
+                                <td className="p-4">
+                                  <Badge className={difficultyInfo.color}>
+                                    {difficultyInfo.name}
+                                  </Badge>
+                                </td>
+                                <td className="p-4">
+                                  <span className="text-sm text-muted-foreground">
+                                    {formatDateForDisplay(training.createdAt)}
+                                  </span>
+                                </td>
+                                <td className="p-4">
+                                  <div className="flex items-center gap-2">
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => router.push(`/dashboard/training/${training.id}`)}
+                                    >
+                                      <Play className="h-4 w-4 mr-1" />
+                                      View
+                                    </Button>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm" 
+                                      className="text-destructive hover:text-destructive"
+                                      onClick={() => handleDeleteClick(training)}
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-1" />
+                                      Delete
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="lg:hidden space-y-4">
+              {existingTrainings.map((training) => {
+                const categoryInfo = getCategoryInfo(training.category)
+                const difficultyInfo = getDifficultyInfo(training.difficulty || "beginner")
+                const IconComponent = categoryInfo.icon
+                return (
+                  <Card key={training.id} className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`h-10 w-10 rounded-lg ${categoryInfo.color} flex items-center justify-center`}>
+                          <IconComponent className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">{training.title}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-2">{training.description}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className={`${categoryInfo.color} text-white`}>
+                          {categoryInfo.name}
+                        </Badge>
+                        <Badge className={difficultyInfo.color}>
+                          {difficultyInfo.name}
+                        </Badge>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Created: {formatDateForDisplay(training.createdAt)}
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => router.push(`/dashboard/training/${training.id}`)}
+                        className="flex-1"
+                      >
+                        <Play className="h-4 w-4 mr-1" />
+                        View
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1 text-destructive hover:text-destructive"
+                        onClick={() => handleDeleteClick(training)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </Button>
+                    </div>
+                  </Card>
+                )
+              })}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Training</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{trainingToDelete?.title}</strong>? 
+              This action cannot be undone and will permanently remove the training material from the system.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Deleting..." : "Delete Training"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

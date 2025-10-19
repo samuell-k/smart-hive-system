@@ -15,6 +15,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { 
   Lightbulb, 
   Search, 
@@ -27,9 +37,10 @@ import {
   Shield,
   Zap,
   Heart,
-  Target
+  Target,
+  Trash2
 } from "lucide-react"
-import { getAllTips, createDocument } from "@/lib/db-utils"
+import { getAllTips, createDocument, deleteDocument } from "@/lib/db-utils"
 import { useAuth } from "@/lib/auth-context"
 import type { Tip } from "@/lib/db-utils"
 
@@ -49,6 +60,9 @@ export default function TipsPage() {
     content: "",
     category: "general",
   })
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [tipToDelete, setTipToDelete] = useState<Tip | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const categories = [
     { id: "all", name: "All Tips", icon: BookOpen, color: "bg-blue-500" },
@@ -105,8 +119,7 @@ export default function TipsPage() {
       await createDocument<Tip>("tips", {
         title: formData.title,
         content: formData.content,
-        category: formData.category,
-        author: userData?.displayName || userData?.fullName || "Admin",
+        author: userData?.displayName || "Admin",
         createdAt: new Date(),
       })
 
@@ -124,14 +137,34 @@ export default function TipsPage() {
     }
   }
 
+  const handleDeleteClick = (tip: Tip) => {
+    setTipToDelete(tip)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!tipToDelete?.id) return
+
+    setDeleting(true)
+    try {
+      await deleteDocument("tips", tipToDelete.id)
+      await loadTips()
+    } catch (error) {
+      console.error("Error deleting tip:", error)
+    } finally {
+      setDeleting(false)
+      setDeleteDialogOpen(false)
+      setTipToDelete(null)
+    }
+  }
+
   const filteredTips = tips.filter((tip) => {
     const matchesSearch = 
       tip.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       tip.content.toLowerCase().includes(searchQuery.toLowerCase())
     
-    const matchesCategory = selectedCategory === "all" || tip.category === selectedCategory
-    
-    return matchesSearch && matchesCategory
+    // Since Tip interface doesn't have category, we'll just filter by search for now
+    return matchesSearch
   })
 
   const getCategoryInfo = (categoryId: string) => {
@@ -148,20 +181,20 @@ export default function TipsPage() {
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full translate-y-12 -translate-x-12"></div>
         </div>
         
-        <div className="relative z-10 flex items-center justify-between">
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
-              <div className="h-12 w-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                <Lightbulb className="h-6 w-6 text-white" />
+            <h1 className="text-2xl sm:text-4xl font-bold mb-2 flex items-center gap-3">
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <Lightbulb className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
               Tips & Advice
             </h1>
-            <p className="text-amber-100 text-lg">Expert insights and best practices for successful beekeeping</p>
+            <p className="text-amber-100 text-base sm:text-lg">Expert insights and best practices for successful beekeeping</p>
           </div>
           {isAdmin && (
             <Button 
               onClick={() => setIsDialogOpen(true)} 
-              className="bg-white/20 hover:bg-white/30 text-white border-white/30 backdrop-blur-sm"
+              className="bg-white/20 hover:bg-white/30 text-white border-white/30 backdrop-blur-sm w-full sm:w-auto"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Tip
@@ -173,17 +206,17 @@ export default function TipsPage() {
       {/* Search and Categories */}
       <div className="space-y-6">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
           <Input
             placeholder="Search tips and advice..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-12 h-12 text-lg border-2 focus:border-amber-400"
+            className="pl-10 sm:pl-12 h-10 sm:h-12 text-base sm:text-lg border-2 focus:border-amber-400"
           />
         </div>
 
         {/* Category Filter */}
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-2 sm:gap-3">
           {categories.map((category) => {
             const IconComponent = category.icon
             const isSelected = selectedCategory === category.id
@@ -191,13 +224,13 @@ export default function TipsPage() {
               <button
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${
+                className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-full transition-all duration-300 text-sm sm:text-base ${
                   isSelected
                     ? `${category.color} text-white shadow-lg scale-105`
                     : 'bg-gray-100 hover:bg-gray-200 text-gray-700 hover:scale-105'
                 }`}
               >
-                <IconComponent className="h-4 w-4" />
+                <IconComponent className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="font-medium">{category.name}</span>
               </button>
             )
@@ -228,9 +261,9 @@ export default function TipsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {filteredTips.map((tip) => {
-            const categoryInfo = getCategoryInfo(tip.category || "general")
+            const categoryInfo = getCategoryInfo("general") // Default to general since Tip doesn't have category
             const IconComponent = categoryInfo.icon
             return (
               <Card 
@@ -243,13 +276,26 @@ export default function TipsPage() {
                       <IconComponent className="h-6 w-6 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center justify-between mb-2">
                         <Badge 
                           variant="secondary" 
                           className={`${categoryInfo.color} text-white text-xs font-medium`}
                         >
                           {categoryInfo.name}
                         </Badge>
+                        {isAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteClick(tip)
+                            }}
+                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                       <CardTitle className="text-lg mb-2 line-clamp-2 group-hover:text-amber-600 transition-colors">
                         {tip.title}
@@ -285,37 +331,37 @@ export default function TipsPage() {
       )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[700px]">
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-amber-500 flex items-center justify-center">
-                <Plus className="h-4 w-4 text-white" />
+            <DialogTitle className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+              <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-lg bg-amber-500 flex items-center justify-center">
+                <Plus className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
               </div>
               Add New Tip
             </DialogTitle>
-            <DialogDescription className="text-base">
+            <DialogDescription className="text-sm sm:text-base">
               Share expert advice and best practices with the beekeeping community
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6 py-6">
+          <div className="space-y-4 sm:space-y-6 py-4 sm:py-6">
             <div className="space-y-2">
-              <Label htmlFor="title" className="text-base font-medium">Tip Title</Label>
+              <Label htmlFor="title" className="text-sm sm:text-base font-medium">Tip Title</Label>
               <Input
                 id="title"
                 placeholder="e.g., Best Practices for Winter Hive Management"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="h-12 text-base"
+                className="h-10 sm:h-12 text-sm sm:text-base"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="category" className="text-base font-medium">Category</Label>
+              <Label htmlFor="category" className="text-sm sm:text-base font-medium">Category</Label>
               <select
                 id="category"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full h-12 px-3 rounded-md border border-input bg-background text-base"
+                className="w-full h-10 sm:h-12 px-3 rounded-md border border-input bg-background text-sm sm:text-base"
               >
                 {categories.slice(1).map((category) => (
                   <option key={category.id} value={category.id}>
@@ -326,36 +372,59 @@ export default function TipsPage() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="content" className="text-base font-medium">Tip Content</Label>
+              <Label htmlFor="content" className="text-sm sm:text-base font-medium">Tip Content</Label>
               <Textarea
                 id="content"
                 placeholder="Share your expert knowledge, step-by-step instructions, or helpful insights..."
                 value={formData.content}
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                rows={10}
-                className="text-base"
+                rows={8}
+                className="text-sm sm:text-base"
               />
             </div>
           </div>
-          <DialogFooter className="gap-3">
+          <DialogFooter className="flex flex-col sm:flex-row gap-3">
             <Button 
               variant="outline" 
               onClick={() => setIsDialogOpen(false)} 
               disabled={isSubmitting}
-              className="h-12 px-6"
+              className="w-full sm:w-auto h-10 sm:h-12 px-6"
             >
               Cancel
             </Button>
             <Button 
               onClick={handleCreateTip} 
               disabled={isSubmitting}
-              className="h-12 px-6 bg-amber-500 hover:bg-amber-600"
+              className="w-full sm:w-auto h-10 sm:h-12 px-6 bg-amber-500 hover:bg-amber-600"
             >
               {isSubmitting ? "Creating..." : "Create Tip"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Tip</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{tipToDelete?.title}</strong>? 
+              This action cannot be undone and will permanently remove the tip from the system.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Deleting..." : "Delete Tip"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

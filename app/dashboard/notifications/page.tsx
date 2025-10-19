@@ -181,19 +181,19 @@ export default function NotificationsPage() {
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full translate-y-12 -translate-x-12"></div>
         </div>
         
-        <div className="relative z-10 flex items-center justify-between">
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
-              <div className="h-12 w-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                <Bell className="h-6 w-6 text-white" />
+            <h1 className="text-2xl sm:text-4xl font-bold mb-2 flex items-center gap-3">
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <Bell className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
               Notifications
             </h1>
-            <p className="text-blue-100 text-lg">Stay updated with your hive alerts and system messages</p>
+            <p className="text-blue-100 text-base sm:text-lg">Stay updated with your hive alerts and system messages</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             {unreadCount > 0 && (
-              <div className="bg-white/20 backdrop-blur-sm text-white rounded-full px-4 py-2 flex items-center gap-2">
+              <div className="bg-white/20 backdrop-blur-sm text-white rounded-full px-3 sm:px-4 py-2 flex items-center gap-2 text-sm sm:text-base">
                 <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
                 <span className="font-semibold">{unreadCount} unread</span>
               </div>
@@ -201,7 +201,7 @@ export default function NotificationsPage() {
             {notifications.length > 0 && (
               <button
                 onClick={handleClearAllNotifications}
-                className="bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2 transition-all duration-200 hover:scale-105"
+                className="bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-sm px-3 sm:px-4 py-2 rounded-full flex items-center gap-2 transition-all duration-200 hover:scale-105 text-sm sm:text-base w-full sm:w-auto justify-center sm:justify-start"
               >
                 <Trash2 className="h-4 w-4" />
                 Clear All
@@ -212,22 +212,22 @@ export default function NotificationsPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16">
-          <div className="h-12 w-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-6" />
-          <p className="text-muted-foreground text-lg">Loading notifications...</p>
+        <div className="text-center py-12 sm:py-16">
+          <div className="h-8 w-8 sm:h-12 sm:w-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-4 sm:mb-6" />
+          <p className="text-muted-foreground text-base sm:text-lg">Loading notifications...</p>
         </div>
       ) : notifications.length === 0 ? (
         <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border-2 border-dashed border-gray-200">
-          <div className="p-16 text-center">
-            <div className="h-20 w-20 rounded-full bg-gray-200 flex items-center justify-center mx-auto mb-6">
-              <Bell className="h-10 w-10 text-gray-400" />
+          <div className="p-8 sm:p-16 text-center">
+            <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-gray-200 flex items-center justify-center mx-auto mb-4 sm:mb-6">
+              <Bell className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400" />
             </div>
-            <h3 className="text-2xl font-semibold text-gray-700 mb-3">No notifications</h3>
-            <p className="text-gray-500 text-lg">You're all caught up! Your hives are running smoothly.</p>
+            <h3 className="text-xl sm:text-2xl font-semibold text-gray-700 mb-2 sm:mb-3">No notifications</h3>
+            <p className="text-gray-500 text-base sm:text-lg">You're all caught up! Your hives are running smoothly.</p>
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {notifications.map((notification) => (
             <div
               key={notification.id}
@@ -239,42 +239,43 @@ export default function NotificationsPage() {
                     : "border-blue-200 bg-gradient-to-r from-blue-50/50 to-indigo-50/50"
               }`}
             >
-              <div className="p-6 flex items-start gap-4">
+              <div className="p-4 sm:p-6 flex items-start gap-3 sm:gap-4">
                 <div className="flex-shrink-0 mt-1">
                   {getIcon(notification.type, notification.title)}
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">{notification.title}</h3>
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{notification.title}</h3>
                         {!notification.read && (
-                          <div className={`w-2 h-2 rounded-full animate-pulse ${
+                          <div className={`w-2 h-2 rounded-full animate-pulse flex-shrink-0 ${
                             notification.type === "success" ? "bg-green-500" : "bg-blue-500"
                           }`}></div>
                         )}
                       </div>
-                      <p className="text-gray-700 mb-3 leading-relaxed">{notification.message}</p>
-                      <div className="flex items-center gap-1 text-sm text-gray-500">
-                        <Clock className="h-4 w-4" />
+                      <p className="text-sm sm:text-base text-gray-700 mb-3 leading-relaxed break-words">{notification.message}</p>
+                      <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-500">
+                        <Clock className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                         <span>{formatDateForDisplay(notification.createdAt)}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       {!notification.read && (
                         <button
-                          className={`text-sm font-semibold px-3 py-1 rounded-full transition-colors duration-200 ${
+                          className={`text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded-full transition-colors duration-200 ${
                             notification.type === "success"
                               ? "text-green-600 hover:text-green-800 bg-green-100 hover:bg-green-200"
                               : "text-blue-600 hover:text-blue-800 bg-blue-100 hover:bg-blue-200"
                           }`}
                           onClick={() => handleMarkAsRead(notification.id!)}
                         >
-                          Mark as read
+                          <span className="hidden sm:inline">Mark as read</span>
+                          <span className="sm:hidden">Read</span>
                         </button>
                       )}
                       <button
-                        className="text-sm font-semibold px-3 py-1 rounded-full transition-colors duration-200 text-red-600 hover:text-red-800 bg-red-100 hover:bg-red-200"
+                        className="text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded-full transition-colors duration-200 text-red-600 hover:text-red-800 bg-red-100 hover:bg-red-200"
                         onClick={() => handleDeleteNotification(notification.id!)}
                         title="Delete notification"
                       >
