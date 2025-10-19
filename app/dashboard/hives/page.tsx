@@ -327,80 +327,79 @@ export default function HivesPage() {
           </CardHeader>
           <CardContent>
             {/* Desktop Table View */}
-            <div className="hidden lg:block rounded-md border">
-              <Table>
+            <div className="hidden md:block rounded-md border overflow-x-auto">
+              <Table className="min-w-[600px]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Hive</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>User</TableHead>
-                    <TableHead>Installation Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    {isAdmin && <TableHead>Owner</TableHead>}
-                    <TableHead>Actions</TableHead>
+                    <TableHead className="text-xs">Hive</TableHead>
+                    <TableHead className="text-xs">Location</TableHead>
+                    <TableHead className="text-xs">User</TableHead>
+                    <TableHead className="text-xs">Date</TableHead>
+                    <TableHead className="text-xs">Status</TableHead>
+                    {isAdmin && <TableHead className="text-xs">Owner</TableHead>}
+                    <TableHead className="text-xs">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {hives.map((hive) => (
                     <TableRow key={hive.id} className="hover:bg-muted/50">
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <Hexagon className="h-4 w-4 text-primary" />
+                      <TableCell className="min-w-[140px] max-w-[140px]">
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <Hexagon className="h-3 w-3 text-primary" />
                           </div>
-                          <div>
-                            <p className="font-medium text-foreground">{hive.hiveNumber}</p>
-                            <p className="text-sm text-muted-foreground">ID: {hive.id}</p>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-foreground truncate text-sm">{hive.hiveNumber}</p>
+                            <p className="text-xs text-muted-foreground truncate">ID: {hive.id?.slice(0, 6)}...</p>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="min-w-[120px] max-w-[120px]">
                         <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                          {hive.location}
+                          <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                          <span className="truncate text-sm">{hive.location}</span>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="min-w-[100px] max-w-[100px]">
                         <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          {hive.userName}
+                          <User className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                          <span className="truncate text-sm">{hive.userName}</span>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="min-w-[100px] max-w-[100px]">
                         <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          {formatDateForDisplay(hive.installationDate)}
+                          <Calendar className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                          <span className="truncate text-sm">{formatDateForDisplay(hive.installationDate)}</span>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="min-w-[80px] max-w-[80px]">
                         <Badge
                           variant={
                             hive.status === "confirmed" ? "default" : hive.status === "pending" ? "secondary" : "outline"
                           }
+                          className="text-xs"
                         >
                           {hive.status}
                         </Badge>
                       </TableCell>
                       {isAdmin && (
-                        <TableCell>
-                          {usersMap[hive.userId] && hive.userId !== userData?.uid ? (
-                            <span className="text-sm text-muted-foreground">
-                              {usersMap[hive.userId].fullName}
-                            </span>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">You</span>
-                          )}
+                        <TableCell className="min-w-[100px] max-w-[100px]">
+                          <span className="text-xs text-muted-foreground truncate block">
+                            {usersMap[hive.userId] && hive.userId !== userData?.uid ? 
+                              usersMap[hive.userId].fullName : "You"}
+                          </span>
                         </TableCell>
                       )}
-                      <TableCell>
+                      <TableCell className="min-w-[120px] max-w-[120px]">
                         {(!isAdmin || hive.userId === userData?.uid) && (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
                             <Button 
                               variant="outline" 
                               size="sm"
                               onClick={() => handleOpenDialog(hive)}
+                              className="h-7 px-2 text-xs"
                             >
-                              <Edit className="h-4 w-4 mr-1" />
+                              <Edit className="h-3 w-3 mr-1" />
                               Edit
                             </Button>
                             <AlertDialog>
@@ -408,9 +407,9 @@ export default function HivesPage() {
                                 <Button 
                                   variant="outline" 
                                   size="sm" 
-                                  className="text-destructive hover:text-destructive"
+                                  className="h-7 px-2 text-xs text-destructive hover:text-destructive"
                                 >
-                                  <Trash2 className="h-4 w-4 mr-1" />
+                                  <Trash2 className="h-3 w-3 mr-1" />
                                   Delete
                                 </Button>
                               </AlertDialogTrigger>
@@ -443,7 +442,7 @@ export default function HivesPage() {
             </div>
 
             {/* Mobile Card View */}
-            <div className="lg:hidden space-y-4">
+            <div className="md:hidden space-y-4">
               {hives.map((hive) => (
                 <Card key={hive.id} className="p-4">
                   <div className="flex items-start justify-between mb-3">
@@ -466,20 +465,20 @@ export default function HivesPage() {
                   </div>
                   
                   <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 text-sm">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{hive.location}</span>
+                    <div className="flex items-start gap-2 text-sm">
+                      <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <span className="text-muted-foreground break-words">{hive.location}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{hive.userName}</span>
+                    <div className="flex items-start gap-2 text-sm">
+                      <User className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <span className="text-muted-foreground break-words">{hive.userName}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{formatDateForDisplay(hive.installationDate)}</span>
+                    <div className="flex items-start gap-2 text-sm">
+                      <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <span className="text-muted-foreground break-words">{formatDateForDisplay(hive.installationDate)}</span>
                     </div>
                     {isAdmin && (
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-muted-foreground break-words">
                         Owner: {usersMap[hive.userId] && hive.userId !== userData?.uid ? 
                           usersMap[hive.userId].fullName : "You"}
                       </div>
